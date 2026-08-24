@@ -1,0 +1,17 @@
+[Unit]
+Description=SmartCar PWA web server
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+WorkingDirectory=/home/pi/smart_car/car_control
+ExecStart=/usr/bin/python3 -m http.server 8000 --bind 0.0.0.0 --directory /home/pi/smart_car/car_control
+Restart=on-failure
+RestartSec=2
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target
