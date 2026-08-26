@@ -1,14 +1,15 @@
 [Unit]
-Description=SmartCar PWA web server
+Description=SmartCar motor WebSocket server
 Wants=network-online.target
-After=network-online.target
+After=network-online.target systemd-modules-load.service
 
 [Service]
 Type=simple
 User=pi
 Group=pi
+SupplementaryGroups=motor
 WorkingDirectory=/smart_car/car_control
-ExecStart=/usr/bin/python3 -m http.server 8000 --bind 0.0.0.0 --directory /smart_car/car_control
+ExecStart=/smart_car/car_control/WebSocket_server
 Restart=on-failure
 RestartSec=2
 NoNewPrivileges=true

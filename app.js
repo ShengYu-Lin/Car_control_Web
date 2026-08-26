@@ -1,4 +1,12 @@
 // ── Camera buttons ──────────────────────────────────────────
+document.addEventListener('selectstart', (event) => {
+  event.preventDefault();
+});
+
+document.addEventListener('contextmenu', (event) => {
+  event.preventDefault();
+});
+
 function camPress(direction) {
   console.log(`camera: ${direction}`);
 }
@@ -60,6 +68,18 @@ function connectMotorWebSocket() {
     setConnectionStatus(true, '已連接');
     sendMotor(0, 0);
   });
+
+motorSocket.addEventListener('message', (event) => {
+  try {
+    const data = JSON.parse(event.data);
+
+    if (data.type === 'mq135') {
+      updateAirQuality(data.quality);
+    }
+  } catch (error) {
+    console.error('Invalid WebSocket data:', error);
+  }
+});
 
   motorSocket.addEventListener('close', () => {
     setConnectionStatus(false, '未連接');
@@ -259,25 +279,36 @@ if (screen.orientation && screen.orientation.lock) {
 // Call updateAirQuality('good'), updateAirQuality('moderate'), or updateAirQuality('poor')
 function updateAirQuality(level) {
   const elem = document.getElementById('air-quality');
-  elem.classList.remove('good', 'moderate', 'poor');
-  
-  switch(level) {
-    case 'good':
+
+  elem.classList.remove(
+    'good',
+    'normal',
+    'bad',
+    'unknown'
+  );
+
+  switch (level) {
+    case 'GOOD':
       elem.classList.add('good');
       elem.textContent = '優良';
       break;
-    case 'moderate':
-      elem.classList.add('moderate');
+
+    case 'NORMAL':
+      elem.classList.add('normal');
       elem.textContent = '普通';
       break;
-    case 'poor':
-      elem.classList.add('poor');
+
+    case 'BAD':
+      elem.classList.add('bad');
       elem.textContent = '不佳';
+      break;
+
+    default:
+      elem.classList.add('unknown');
+      elem.textContent = '等待資料';
       break;
   }
 }
-
-// ── Light Level Control ──────────────────────────────────────
 // Example function to update light level
 // Call updateLightLevel(500) with lux value
 function updateLightLevel(lux) {

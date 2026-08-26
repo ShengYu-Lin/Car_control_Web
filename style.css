@@ -4,6 +4,8 @@
   padding: 0;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 body {
@@ -14,6 +16,17 @@ body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+button,
+.cam-btn,
+.joystick-ring,
+.joystick-knob,
+.sensor-item {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* ── Top bar ── */
@@ -311,13 +324,18 @@ body {
   color: #fff;
 }
 
-.air-quality.moderate {
+.air-quality.normal {
   background: #ffc107;
   color: #000;
 }
 
-.air-quality.poor {
+.air-quality.bad {
   background: #dc3545;
+  color: #fff;
+}
+
+.air-quality.unknown {
+  background: #6c757d;
   color: #fff;
 }
 

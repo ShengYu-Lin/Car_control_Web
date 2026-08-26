@@ -22,8 +22,8 @@
     </div>
     <div class="topbar-center">智慧車遠端控制</div>
     <div class="topbar-right">
-      <span>🔋 78%</span>
-      <span>⏱ 車速: 0.0 m/s</span>
+      <span></span>
+      <span></span>
     </div>
   </div>
 
@@ -75,10 +75,10 @@
       <div class="video-placeholder"></div>
       <img src="/stream">
       <div class="video-overlay">
-        <div class="badge-rec"><span class="rec-dot"></span>REC</div>
+       <!-- <div class="badge-rec"><span class="rec-dot"></span>REC</div>
         <div class="badge-fps">FPS: 30</div>
         <div class="badge-res">分辨率: 640×480</div>
-        <div class="badge-latency">延遲: 120 ms</div>
+	<div class="badge-latency">延遲: 120 ms</div> -->
       </div>
     </div>
 
@@ -109,9 +109,14 @@
       <span class="sensor-label">濕度: <span id="humi">55%</span></span>
     </div>
     <div class="sensor-item">
-      <span class="sensor-icon">🌫️</span>
-      <span class="sensor-label">空氣品質: <span id="air-quality" class="air-quality good">優良</span></span>
-    </div>
+  <span class="sensor-icon">🌫️</span>
+  <span class="sensor-label">
+    空氣品質：
+    <span id="air-quality" class="air-quality unknown">
+      等待資料
+    </span>
+  </span>
+</div>
     <div class="sensor-item">
       <span class="sensor-icon">☀️</span>
       <span class="sensor-label">光照值: <span id="light">850 lux</span></span>
