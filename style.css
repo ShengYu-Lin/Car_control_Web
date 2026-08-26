@@ -29,6 +29,15 @@ button,
   -webkit-tap-highlight-color: transparent;
 }
 
+.cam-btn,
+.joystick-ring,
+.joystick-knob {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
 /* ── Top bar ── */
 .topbar {
   display: flex;

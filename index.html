@@ -37,32 +37,28 @@
       <div class="cam-grid">
         <div class="cam-spacer"></div>
         <button class="cam-btn" id="btn-cam-up"
-          ontouchstart="camPress('up')" ontouchend="camRelease('btn-cam-up')"
-          onmousedown="camPress('up')"  onmouseup="camRelease('btn-cam-up')">
-          <span class="arrow">↑</span>
+          data-camera-direction="up"
+	  <span class="arrow">↑</span>
           <span>上</span>
         </button>
         <div class="cam-spacer"></div>
 
         <button class="cam-btn" id="btn-cam-left"
-          ontouchstart="camPress('left')" ontouchend="camRelease('btn-cam-left')"
-          onmousedown="camPress('left')"  onmouseup="camRelease('btn-cam-left')">
-          <span class="arrow">←</span>
+          data-camera-direction="left"
+	  <span class="arrow">←</span>
           <span>左</span>
         </button>
         <div class="cam-spacer"></div>
         <button class="cam-btn" id="btn-cam-right"
-          ontouchstart="camPress('right')" ontouchend="camRelease('btn-cam-right')"
-          onmousedown="camPress('right')"  onmouseup="camRelease('btn-cam-right')">
-          <span class="arrow">→</span>
+          data-camera-direction="right"
+	  <span class="arrow">→</span>
           <span>右</span>
         </button>
 
         <div class="cam-spacer"></div>
         <button class="cam-btn" id="btn-cam-down"
-          ontouchstart="camPress('down')" ontouchend="camRelease('btn-cam-down')"
-          onmousedown="camPress('down')"  onmouseup="camRelease('btn-cam-down')">
-          <span class="arrow">↓</span>
+          data-camera-direction="down"
+	  <span class="arrow">↓</span>
           <span>下</span>
         </button>
         <div class="cam-spacer"></div>

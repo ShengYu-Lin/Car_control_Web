@@ -7,12 +7,38 @@ document.addEventListener('contextmenu', (event) => {
   event.preventDefault();
 });
 
+// Camera buttons use pointer events, so they can be pressed while the
+// joystick is being controlled by another finger.
+document.querySelectorAll('.cam-btn').forEach((button) => {
+  const direction = button.dataset.cameraDirection;
+
+  button.addEventListener('pointerdown', (event) => {
+    event.preventDefault();
+    button.setPointerCapture(event.pointerId);
+    button.classList.add('pressed');
+    camPress(direction);
+  });
+
+  const release = (event) => {
+    event.preventDefault();
+    button.classList.remove('pressed');
+    camRelease(button.id);
+  };
+
+  button.addEventListener('pointerup', release);
+  button.addEventListener('pointercancel', release);
+  button.addEventListener('lostpointercapture', () => {
+    button.classList.remove('pressed');
+  });
+});
+
 function camPress(direction) {
   console.log(`camera: ${direction}`);
+  // 若之後要控制 SG90，可在此送出 camera 指令。
 }
 
 function camRelease(btnId) {
-  // visual feedback reset handled by :active; nothing extra needed
+  console.log(`camera release: ${btnId}`);
 }
 
 // ── Joystick ─────────────────────────────────────────────────
@@ -20,6 +46,7 @@ const ring = document.getElementById('joystick-ring');
 const knob = document.getElementById('joystick-knob');
 
 let joystickActive = false;
+let joystickPointerId = null;
 let currentLeft = 0;
 let currentRight = 0;
 let signalInterval = null;
@@ -210,47 +237,37 @@ function handleMove(clientX, clientY) {
   startSignal(wheels.left, wheels.right);
 }
 
-// Touch events
-knob.addEventListener('touchstart', (e) => {
+// Pointer events support touch, pen and mouse, while pointerId prevents
+// another finger releasing a control that it did not start.
+knob.addEventListener('pointerdown', (e) => {
   e.preventDefault();
   joystickActive = true;
-  knob.classList.add('active');
-}, { passive: false });
-
-document.addEventListener('touchmove', (e) => {
-  if (!joystickActive) return;
-  e.preventDefault();
-  const t = e.touches[0];
-  handleMove(t.clientX, t.clientY);
-}, { passive: false });
-
-document.addEventListener('touchend', (e) => {
-  if (!joystickActive) return;
-  joystickActive = false;
-  stopSignal();
-});
-
-document.addEventListener('touchcancel', () => {
-  if (!joystickActive) return;
-  joystickActive = false;
-  stopSignal();
-});
-
-// Mouse events (for desktop testing)
-knob.addEventListener('mousedown', (e) => {
-  joystickActive = true;
+  joystickPointerId = e.pointerId;
+  knob.setPointerCapture(e.pointerId);
   knob.classList.add('active');
 });
 
-document.addEventListener('mousemove', (e) => {
-  if (!joystickActive) return;
+document.addEventListener('pointermove', (e) => {
+  if (!joystickActive || e.pointerId !== joystickPointerId) return;
+  e.preventDefault();
   handleMove(e.clientX, e.clientY);
-});
+}, { passive: false });
 
-document.addEventListener('mouseup', (e) => {
-  if (!joystickActive) return;
+function endJoystick(e) {
+  if (!joystickActive || e.pointerId !== joystickPointerId) return;
   joystickActive = false;
+  joystickPointerId = null;
   stopSignal();
+}
+
+knob.addEventListener('pointerup', endJoystick);
+knob.addEventListener('pointercancel', endJoystick);
+knob.addEventListener('lostpointercapture', () => {
+  if (joystickActive) {
+    joystickActive = false;
+    joystickPointerId = null;
+    stopSignal();
+  }
 });
 
 document.addEventListener('visibilitychange', () => {
@@ -315,3 +332,4 @@ function updateLightLevel(lux) {
   const elem = document.getElementById('light');
   elem.textContent = `${lux} lux`;
 }
+
