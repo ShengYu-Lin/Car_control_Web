@@ -69,10 +69,6 @@ Server → PWA：
 
 `WebSocket_server.Makefile` 的執行檔名稱必須與 service 一致：
 
-```make
-
-```
-
 編譯：
 
 ```bash
@@ -83,27 +79,6 @@ ls -l WebSocket_server
 ```
 
 ## 5. WebSocket.service
-
-```ini
-[Unit]
-Description=SmartCar motor WebSocket server
-Wants=network-online.target
-After=network-online.target systemd-modules-load.service
-
-[Service]
-Type=simple
-User=pi
-Group=pi
-SupplementaryGroups=motor
-WorkingDirectory=/smart_car/car_control
-ExecStart=/smart_car/car_control/WebSocket_server
-Restart=on-failure
-RestartSec=2
-NoNewPrivileges=true
-
-[Install]
-WantedBy=multi-user.target
-```
 
 安裝與啟用：
 
