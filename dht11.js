@@ -1,4 +1,4 @@
-const API_URL = "http://192.168.69.104/custom/api/dht11";
+const API_URL = "/custom/api/dht11";
 const UPDATE_INTERVAL = 3000;
 
 async function loadDHT11() {
