@@ -135,7 +135,7 @@ function xyToWheelSpeed(x, y) {
   // Convert joystick position to differential drive
   // left wheel = forward/backward + turn adjustment
   // right wheel = forward/backward - turn adjustment
-  
+  const turn = x * 0.5;
   let left = y + x;
   let right = y - x;
   
