@@ -141,6 +141,40 @@ button,
   font-size: 22px;
 }
 
+/* ── 手動 / 自動模式切換 ── */
+.mode-switch {
+  display: flex;
+  width: 100%;
+  flex-shrink: 0;
+  border: 1.5px solid #2a4070;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.mode-btn {
+  flex: 1;
+  padding: 7px 4px;
+  background: #0f1e38;
+  border: none;
+  color: #7a90b0;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.mode-btn.active {
+  background: #1a5fc8;
+  color: #fff;
+  font-weight: bold;
+}
+
+/* 自動模式下方向鍵不能用，做出明顯的停用外觀 */
+.cam-grid.locked {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
 .cam-grid {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
@@ -148,26 +182,225 @@ button,
   gap: 6px;
   width: 100%;
   flex: 1;
+  min-height: 150px;
 }
 
 .cam-spacer {
   /* empty grid cell */
 }
 
+/* ── 人臉偵測開關 ── */
+.track-btn {
+  width: 100%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 6px;
+  background: #0f1e38;
+  border: 1.5px solid #2a4070;
+  border-radius: 10px;
+  color: #cde;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.track-btn.on {
+  background: #14402a;
+  border-color: #4cff72;
+  color: #dfe;
+}
+
+.track-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #445;
+}
+
+.track-btn.on .track-dot {
+  background: #4cff72;
+}
+
+/* ── 目標偵測狀態列（人臉偵測按鈕下方，恆常顯示）── */
+.target-status {
+  width: 100%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 4px;
+  background: #0a1020;
+  border: 1px solid #1e2d45;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #667a8c;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+/* 偵測到目標時只換文字，不加高亮 —— 維持和面板一致的樣式 */
+.target-status.found {
+  color: #cddeef;
+}
+
+.target-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #2a3546;
+}
+
+/* ── 車身姿態（MPU6050）── */
+/* 放在左邊面板（22% 寬）底下，所以做得比一般儀表緊湊一些 */
+.attitude {
+  width: 100%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px;
+  background: #0a1020;
+  border: 1px solid #1e2d45;
+  border-radius: 8px;
+}
+
+/* 人工地平儀：外框固定不動，裡面的天地線跟著車身反向轉，
+   看起來就像從車上往前看出去的視野。 */
+.attitude-view {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 2px solid #2a3f60;
+  background: #111d35;
+  overflow: hidden;
+}
+
+/* 做成兩倍大再往左上退一半：這樣不管轉到什麼角度，圓框裡都還是被
+   天地填滿，不會轉出空白的角落。 */
+.horizon {
+  position: absolute;
+  left: -50%;
+  top: -50%;
+  width: 200%;
+  height: 200%;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.18s linear;   /* 跟得上 0.2 秒一次的推播又不抖 */
+}
+
+.horizon-sky {
+  flex: 1;
+  background: #1d3a63;
+}
+
+.horizon-ground {
+  flex: 1;
+  background: #3b2b1a;
+  border-top: 1.5px solid #7fb2ff;      /* 這條就是地平線 */
+}
+
+/* 中央固定不動的車身標記，用來對照天地線歪多少 */
+.horizon-mark {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  pointer-events: none;
+}
+
+.horizon-wing {
+  width: 12px;
+  height: 2px;
+  background: #ffd166;
+}
+
+.horizon-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #ffd166;
+}
+
+.attitude-values {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.attitude-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px;
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.attitude-key {
+  color: #667a8c;
+  white-space: nowrap;
+}
+
+.attitude-val {
+  color: #4da6ff;
+  font-weight: bold;
+  white-space: nowrap;
+  /* 數字等寬，讀數一直在跳的時候才不會左右彈來彈去 */
+  font-variant-numeric: tabular-nums;
+}
+
+/* 感測器沒接上或掉線：讀數變灰、地平儀淡出，
+   不要停在最後一個值讓人以為車還在那個角度 */
+.attitude.offline .attitude-val {
+  color: #3d4a5c;
+}
+
+.attitude.offline .horizon {
+  opacity: 0.3;
+}
+
 /* ── Center: video feed ── */
 .panel-center {
   flex: 1;
   position: relative;
-  background: #000;
+  /* 串流還沒進來之前的底色 */
+  background: linear-gradient(160deg, #0a1a0a 0%, #0d2010 60%, #112805 100%);
   overflow: hidden;
 }
 
-.video-placeholder {
+/* 即時影像鋪滿整個中央區域；用 contain 保留完整視野不裁切 */
+.video-stream {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   display: block;
-  background: linear-gradient(160deg, #0a1a0a 0%, #0d2010 60%, #112805 100%);
+}
+
+.video-status {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: #6a8;
+}
+
+/* 有影格進來之後就把「等待訊號」蓋掉 */
+.panel-center.stream-ok .video-status {
+  display: none;
 }
 
 .video-overlay {
@@ -220,6 +453,44 @@ button,
   color: #8ab;
 }
 
+/* ── 影像上的狀態提示 ── */
+.alert-stack {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.alert-chip {
+  display: none;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.alert-chip.show {
+  display: block;
+}
+
+.alert-patrol {
+  background: #14406a;
+  color: #9cf;
+}
+
+.badge-angle {
+  position: absolute;
+  top: 30px;
+  left: 10px;
+  font-size: 10px;
+  color: #8ab;
+}
+
 /* ── Right panel: joystick ── */
 .panel-right {
   width: 28%;
@@ -238,11 +509,12 @@ button,
   align-items: center;
   justify-content: center;
   width: 100%;
+  min-height: 0;
 }
 
 .joystick-ring {
   position: relative;
-  width: min(80%, 140px);
+  width: min(80%, 140px, 32vh);
   aspect-ratio: 1;
   border-radius: 50%;
   background: #111d35;
