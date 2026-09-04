@@ -32,13 +32,138 @@ document.querySelectorAll('.cam-btn').forEach((button) => {
   });
 });
 
-function camPress(direction) {
-  console.log(`camera: ${direction}`);
-  // 若之後要控制 SG90，可在此送出 camera 指令。
+const CAMERA_REPEAT_MS = 120; // 按住時每 120 ms 重送一次，讓雲台持續轉動
+
+let cameraRepeatTimer = null;
+
+function sendCamera(direction) {
+  send({ type: 'camera', direction });
 }
 
-function camRelease(btnId) {
-  console.log(`camera release: ${btnId}`);
+function camPress(direction) {
+  // 先清掉舊的計時器：可能有另一顆按鈕還按著沒放開
+  camRelease();
+  sendCamera(direction);
+  cameraRepeatTimer = setInterval(() => sendCamera(direction), CAMERA_REPEAT_MS);
+}
+
+function camRelease() {
+  clearInterval(cameraRepeatTimer);
+  cameraRepeatTimer = null;
+}
+
+// 按著按鈕把手指／滑鼠滑出去再放開時，按鈕本身收不到 release，
+// 所以在 document 上補一層，避免雲台停不下來
+document.addEventListener('mouseup', camRelease);
+document.addEventListener('touchend', camRelease);
+document.addEventListener('touchcancel', camRelease);
+window.addEventListener('blur', camRelease);
+
+// ── Mode switch & face detection ────────────────────────────
+const modeManualBtn = document.getElementById('btn-mode-manual');
+const modeAutoBtn = document.getElementById('btn-mode-auto');
+const camGrid = document.getElementById('cam-grid');
+const faceTrackBtn = document.getElementById('btn-face-track');
+const trackLabel = document.getElementById('track-label');
+const targetStatus = document.getElementById('target-status');
+const targetText = document.getElementById('target-text');
+const alertPatrol = document.getElementById('alert-patrol');
+const angleReadout = document.getElementById('angle-readout');
+
+let mode = 'manual';   // 開啟網頁時預設手動
+let detectOn = false;  // 手動模式下使用者自己開的偵測
+
+function send(message) {
+  if (motorSocket && motorSocket.readyState === WebSocket.OPEN) {
+    motorSocket.send(JSON.stringify(message));
+  }
+}
+
+function applyMode() {
+  const auto = mode === 'auto';
+  modeAutoBtn.classList.toggle('active', auto);
+  modeManualBtn.classList.toggle('active', !auto);
+
+  // 自動模式由巡邏和追蹤接管，方向鍵鎖住
+  camGrid.classList.toggle('locked', auto);
+  camRelease();
+
+  // 自動模式的偵測強制開啟且不可關；手動模式才交還給使用者
+  faceTrackBtn.classList.toggle('on', auto || detectOn);
+  faceTrackBtn.disabled = auto;
+  trackLabel.textContent = auto ? '人臉追蹤（自動）' : '人臉偵測';
+}
+
+function setMode(next) {
+  mode = next;
+  applyMode();
+  send({ type: 'mode', mode });
+  if (next === 'manual') send({ type: 'detect', enabled: detectOn });
+}
+
+modeManualBtn.addEventListener('click', () => setMode('manual'));
+modeAutoBtn.addEventListener('click', () => setMode('auto'));
+
+faceTrackBtn.addEventListener('click', () => {
+  if (mode === 'auto') return;   // 自動模式不讓關
+  detectOn = !detectOn;
+  faceTrackBtn.classList.toggle('on', detectOn);
+  send({ type: 'detect', enabled: detectOn });
+});
+
+function syncState() {
+  send({ type: 'mode', mode });
+  send({ type: 'detect', enabled: detectOn });
+}
+
+// 伺服器定期推狀態，用來更新提示與雲台角度
+function handleStatus(data) {
+  // 目標狀態列一直都在，只換顏色和文字，不會整個消失
+  targetStatus.classList.toggle('found', data.face || data.locked);
+  if (data.locked) {
+    // 自動模式抓到第一張臉就鎖定，偵測已停止，要跟「還在找」明確區分開
+    targetText.textContent = '已鎖定目標（偵測停止）';
+  } else {
+    targetText.textContent = data.face ? '偵測到目標' : '未偵測到目標';
+  }
+
+  alertPatrol.classList.toggle('show', data.patrol);
+  angleReadout.textContent = `${data.pan}° / ${data.tilt}°`;
+}
+
+// ── 車身姿態（MPU6050）──────────────────────────────────────
+const attitude = document.getElementById('attitude');
+const horizon = document.getElementById('horizon');
+const imuRoll = document.getElementById('imu-roll');
+const imuPitch = document.getElementById('imu-pitch');
+const imuYaw = document.getElementById('imu-yaw');
+const imuAccel = document.getElementById('imu-accel');
+
+const HORIZON_PX_PER_DEG = 1.1;  // 俯仰角換算成天地線要上下平移幾 px
+const HORIZON_MAX_DEG = 30;      // 超過就不再往外移，免得天地線整個滑出圓框
+
+function handleImu(data) {
+  attitude.classList.toggle('offline', !data.ok);
+
+  if (!data.ok) {
+    imuRoll.textContent = '--';
+    imuPitch.textContent = '--';
+    imuYaw.textContent = '--';
+    imuAccel.textContent = '--';
+    return;
+  }
+
+  imuRoll.textContent = `${data.roll.toFixed(1)}°`;
+  imuPitch.textContent = `${data.pitch.toFixed(1)}°`;
+  imuYaw.textContent = `${data.yaw.toFixed(1)}°`;
+  imuAccel.textContent = `${data.accel.toFixed(2)} g`;
+
+  // 天地線往車身的反方向轉，外框不動 —— 跟飛機的人工地平儀一樣。
+  // 先轉再平移，平移才會沿著車身自己的上下方向走。
+  // 裝好之後如果轉的方向相反，把這兩個負號改成正的。
+  const shift = clamp(data.pitch, -HORIZON_MAX_DEG, HORIZON_MAX_DEG);
+  horizon.style.transform =
+    `rotate(${-data.roll}deg) translateY(${shift * HORIZON_PX_PER_DEG}px)`;
 }
 
 // ── Joystick ─────────────────────────────────────────────────
@@ -94,6 +219,7 @@ function connectMotorWebSocket() {
   motorSocket.addEventListener('open', () => {
     setConnectionStatus(true, '已連接');
     sendMotor(0, 0);
+    syncState();   // 重連後把模式與偵測狀態同步回伺服器
   });
 
 motorSocket.addEventListener('message', (event) => {
@@ -102,6 +228,10 @@ motorSocket.addEventListener('message', (event) => {
 
     if (data.type === 'mq135') {
       updateAirQuality(data.quality);
+    } else if (data.type === 'status') {
+      handleStatus(data);
+    } else if (data.type === 'imu') {
+      handleImu(data);
     }
   } catch (error) {
     console.error('Invalid WebSocket data:', error);
@@ -123,6 +253,40 @@ motorSocket.addEventListener('message', (event) => {
     setConnectionStatus(false, '連線錯誤');
   });
 }
+
+// ── Camera stream ────────────────────────────────────────────
+const videoStream = document.getElementById('video-stream');
+const panelCenter = document.getElementById('panel-center');
+const streamRes = document.getElementById('stream-res');
+
+const STREAM_RETRY_MS = 2000;
+let streamRetryTimer = null;
+let streamAlive = false;
+
+function setStreamAlive(alive) {
+  streamAlive = alive;
+  panelCenter.classList.toggle('stream-ok', alive);
+}
+
+function reloadStream() {
+  streamRetryTimer = null;
+  videoStream.src = `/stream?t=${Date.now()}`; // 加時間戳，避免拿到快取的舊串流
+}
+
+videoStream.addEventListener('error', () => {
+  setStreamAlive(false);
+  if (!pageUnloading && !streamRetryTimer) {
+    streamRetryTimer = setTimeout(reloadStream, STREAM_RETRY_MS);
+  }
+});
+
+// MJPEG 是持續不斷的 multipart 回應，串流結束前 load 事件不會觸發，
+// 所以改用 naturalWidth 判斷第一張影格有沒有真的進來。
+setInterval(() => {
+  if (streamAlive || videoStream.naturalWidth === 0) return;
+  setStreamAlive(true);
+  streamRes.textContent = `${videoStream.naturalWidth}×${videoStream.naturalHeight}`;
+}, 500);
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
@@ -271,8 +435,10 @@ knob.addEventListener('lostpointercapture', () => {
 });
 
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden)
+  if (document.hidden) {
     stopSignal();
+    camRelease();
+  }
 });
 
 window.addEventListener('pagehide', () => {
